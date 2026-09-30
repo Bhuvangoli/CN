@@ -1,0 +1,12 @@
+Terminal - 1:
+gcc filename_server.c -o filename_server
+./filename_server
+
+Terminal - 2:
+gcc filename_client.c -o filename_client
+./filename_client
+
+
+Replace the file names for the program you are running.
+
+Also change the Port numbers and IP value to 10.3.1.37 or the port which we will use tomorrow
