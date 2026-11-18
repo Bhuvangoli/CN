@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TCP Protocol Templates</title>
+</head>
+
+<body style="background-color: white; color: black;">
+
+<h2>1. Normal TCP Server Template</h2>
+
+<pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;netinet/in.h&gt;
+
+int main() {
+    int sockfd, newsockfd;
+    char buffer[1024];
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t client_len = sizeof(client_addr);
+
+    /* SOCKET SETUP - DO NOT CHANGE */
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (sockfd &lt; 0) {
+        perror("Socket creation failed");
+        exit(1);
+    }
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(8899);
+
+    bind(sockfd,
+         (struct sockaddr *)&amp;server_addr,
+         sizeof(server_addr));
+
+    listen(sockfd, 5);
+
+    printf("Server waiting for connection...\n");
+
+    newsockfd = accept(
+        sockfd,
+        (struct sockaddr *)&amp;client_addr,
+        &amp;client_len
+    );
+
+    printf("Client connected.\n");
+
+
+    /* PROTOCOL-SPECIFIC LOGIC STARTS HERE */
+
+    recv(newsockfd, buffer, sizeof(buffer) - 1, 0);
+
+    buffer[1023] = '\0';
+
+    printf("Received: %s\n", buffer);
+
+
+    /* =========================================
+       ADD THE REQUIRED PROTOCOL LOGIC HERE
+
+       CRC
+       BYTE COUNT
+       BYTE STUFFING
+       BIT STUFFING
+       GO-BACK-N
+       SELECTIVE REPEAT
+
+       ========================================= */
+
+
+    /* PROTOCOL-SPECIFIC LOGIC ENDS HERE */
+
+
+    close(newsockfd);
+    close(sockfd);
+
+    return 0;
+}
+</pre>
+
+
+<h2>2. Normal TCP Client Template</h2>
+
+<pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;netinet/in.h&gt;
+#include &lt;arpa/inet.h&gt;
+
+int main() {
+    int sockfd;
+    char buffer[1024];
+    struct sockaddr_in server_addr;
+
+    /* SOCKET SETUP - DO NOT CHANGE */
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (sockfd &lt; 0) {
+        perror("Socket creation failed");
+        exit(1);
+    }
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8899);
+    server_addr.sin_addr.s_addr =
+        inet_addr("127.0.0.1");
+
+    connect(
+        sockfd,
+        (struct sockaddr *)&amp;server_addr,
+        sizeof(server_addr)
+    );
+
+    printf("Connected to server.\n");
+
+
+    /* PROTOCOL-SPECIFIC LOGIC STARTS HERE */
+
+    strcpy(buffer, "Hello from Client");
+
+    send(
+        sockfd,
+        buffer,
+        strlen(buffer) + 1,
+        0
+    );
+
+
+    /* =========================================
+       ADD THE REQUIRED PROTOCOL LOGIC HERE
+
+       CRC
+       BYTE COUNT
+       BYTE STUFFING
+       BIT STUFFING
+       GO-BACK-N
+       SELECTIVE REPEAT
+
+       ========================================= */
+
+
+    /* PROTOCOL-SPECIFIC LOGIC ENDS HERE */
+
+
+    close(sockfd);
+
+    return 0;
+}
+</pre>
+
+
+<h2>3. CRC - Client Logic</h2>
+
+<pre>
+printf("Enter data: ");
+scanf("%s", data);
+
+printf("Enter generator: ");
+scanf("%s", generator);
+
+/* CRC CALCULATION LOGIC GOES HERE */
+
+calculate_crc(data, generator, codeword);
+
+/* SEND CRC CODEWORD */
+
+send(sockfd, codeword, strlen(codeword) + 1, 0);
+</pre>
+
+
+<h2>4. CRC - Server Logic</h2>
+
+<pre>
+recv(newsockfd, buffer, sizeof(buffer), 0);
+
+/* CRC CHECKING LOGIC */
+
+check_crc(buffer, generator);
+
+if (error)
+    printf("Error detected\n");
+else
+    printf("No error\n");
+</pre>
+
+
+<h2>5. Byte Count - Client Logic</h2>
+
+<pre>
+printf("Enter data: ");
+scanf("%s", data);
+
+/* BYTE COUNT LOGIC */
+
+count = strlen(data);
+
+frame[0] = count;
+strcpy(frame + 1, data);
+
+/* SEND FRAME */
+
+send(sockfd, frame, count + 1, 0);
+</pre>
+
+
+<h2>6. Byte Count - Server Logic</h2>
+
+<pre>
+recv(newsockfd, buffer, sizeof(buffer), 0);
+
+/* BYTE COUNT LOGIC */
+
+count = buffer[0];
+
+printf("Byte Count = %d\n", count);
+printf("Data = %s\n", buffer + 1);
+</pre>
+
+
+<h2>7. Byte Stuffing - Client Logic</h2>
+
+<pre>
+printf("Enter data: ");
+scanf("%s", data);
+
+/* BYTE STUFFING LOGIC */
+
+frame[j++] = '$';
+
+for (i = 0; data[i] != '\0'; i++) {
+
+    if (data[i] == '$' || data[i] == '/') {
+        frame[j++] = '/';
+    }
+
+    frame[j++] = data[i];
+}
+
+frame[j++] = '$';
+frame[j] = '\0';
+
+/* SEND STUFFED FRAME */
+
+send(sockfd, frame, strlen(frame) + 1, 0);
+</pre>
+
+
+<h2>8. Byte Stuffing - Server Logic</h2>
+
+<pre>
+recv(newsockfd, buffer, sizeof(buffer), 0);
+
+/* BYTE DESTUFFING LOGIC */
+
+j = 0;
+
+for (i = 1; i &lt; strlen(buffer) - 1; i++) {
+
+    if (buffer[i] == '/') {
+        i++;
+    }
+
+    destuffed[j++] = buffer[i];
+}
+
+destuffed[j] = '\0';
+
+printf("Original Data: %s\n", destuffed);
+</pre>
+
+
+<h2>9. Bit Stuffing - Client Logic</h2>
+
+<pre>
+printf("Enter binary data: ");
+scanf("%s", data);
+
+/* BIT STUFFING LOGIC */
+
+count = 0;
+j = 0;
+
+for (i = 0; data[i] != '\0'; i++) {
+
+    stuffed[j++] = data[i];
+
+    if (data[i] == '1') {
+        count++;
+
+        if (count == 5) {
+            stuffed[j++] = '0';
+            count = 0;
+        }
+    }
+    else {
+        count = 0;
+    }
+}
+
+stuffed[j] = '\0';
+
+/* SEND STUFFED DATA */
+
+send(sockfd, stuffed, strlen(stuffed) + 1, 0);
+</pre>
+
+
+<h2>10. Bit Stuffing - Server Logic</h2>
+
+<pre>
+recv(newsockfd, buffer, sizeof(buffer), 0);
+
+/* BIT DESTUFFING LOGIC */
+
+count = 0;
+j = 0;
+
+for (i = 0; buffer[i] != '\0'; i++) {
+
+    destuffed[j++] = buffer[i];
+
+    if (buffer[i] == '1') {
+        count++;
+
+        if (count == 5) {
+            i++;
+            count = 0;
+        }
+    }
+    else {
+        count = 0;
+    }
+}
+
+destuffed[j] = '\0';
+
+printf("Original Data: %s\n", destuffed);
+</pre>
+
+
+<h2>11. Go-Back-N - Client Logic</h2>
+
+<pre>
+int base = 0;
+int next_frame = 0;
+int window_size = 4;
+
+while (base &lt; total_frames) {
+
+    while (next_frame &lt; base + window_size &amp;&amp;
+           next_frame &lt; total_frames) {
+
+        printf("Sending Frame %d\n", next_frame);
+
+        sprintf(buffer, "%d", next_frame);
+
+        send(sockfd, buffer,
+             strlen(buffer) + 1, 0);
+
+        next_frame++;
+    }
+
+    recv(sockfd, buffer,
+         sizeof(buffer), 0);
+
+    /* PROCESS ACK */
+
+    printf("Received %s\n", buffer);
+
+    /* MOVE WINDOW */
+
+}
+</pre>
+
+
+<h2>12. Go-Back-N - Server Logic</h2>
+
+<pre>
+int expected = 0;
+
+while (1) {
+
+    recv(newsockfd,
+         buffer,
+         sizeof(buffer),
+         0);
+
+    frame = atoi(buffer);
+
+    if (frame == expected) {
+
+        printf("Frame %d received\n", frame);
+
+        sprintf(buffer, "ACK %d", frame);
+
+        send(newsockfd,
+             buffer,
+             strlen(buffer) + 1,
+             0);
+
+        expected++;
+    }
+    else {
+
+        printf("Frame %d discarded\n", frame);
+
+        sprintf(buffer,
+                "ACK %d",
+                expected - 1);
+
+        send(newsockfd,
+             buffer,
+             strlen(buffer) + 1,
+             0);
+    }
+}
+</pre>
+
+
+<h2>13. Selective Repeat - Client Logic</h2>
+
+<pre>
+int acked[10] = {0};
+
+/* SEND WINDOW */
+
+for (i = 0; i &lt; total_frames; i++) {
+
+    if (!acked[i]) {
+
+        printf("Sending Frame %d\n", i);
+
+        sprintf(buffer, "%d", i);
+
+        send(sockfd,
+             buffer,
+             strlen(buffer) + 1,
+             0);
+    }
+}
+
+/* RECEIVE INDIVIDUAL ACKS */
+
+while (not_all_acked) {
+
+    recv(sockfd,
+         buffer,
+         sizeof(buffer),
+         0);
+
+    sscanf(buffer, "ACK %d", &amp;ack);
+
+    acked[ack] = 1;
+}
+
+/* RETRANSMIT ONLY MISSING FRAMES */
+</pre>
+
+
+<h2>14. Selective Repeat - Server Logic</h2>
+
+<pre>
+int received[10] = {0};
+
+recv(newsockfd,
+     buffer,
+     sizeof(buffer),
+     0);
+
+frame = atoi(buffer);
+
+if (!received[frame]) {
+
+    received[frame] = 1;
+
+    printf("Frame %d received\n", frame);
+}
+
+sprintf(buffer, "ACK %d", frame);
+
+send(newsockfd,
+     buffer,
+     strlen(buffer) + 1,
+     0);
+</pre>
+
+</body>
+</html>

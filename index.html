@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TCP Client Server</title>
+</head>
+<body style="background-color: white; color: black;">
+
+<h2>TCP Server Code</h2>
+
+<pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;netinet/in.h&gt;
+
+int main() {
+    int sockfd, newsockfd;
+    char buffer[1024];
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t client_len = sizeof(client_addr);
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (sockfd &lt; 0) {
+        perror("Socket creation failed");
+        exit(1);
+    }
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_addr.s_addr = INADDR_ANY;
+    server_addr.sin_port = htons(8899);
+
+    if (bind(sockfd, (struct sockaddr *)&amp;server_addr,
+             sizeof(server_addr)) &lt; 0) {
+        perror("Bind failed");
+        exit(1);
+    }
+
+    listen(sockfd, 5);
+
+    printf("Server is waiting for connection...\n");
+
+    newsockfd = accept(sockfd,
+                       (struct sockaddr *)&amp;client_addr,
+                       &amp;client_len);
+
+    if (newsockfd &lt; 0) {
+        perror("Accept failed");
+        exit(1);
+    }
+
+    printf("Client connected.\n");
+
+    recv(newsockfd, buffer, sizeof(buffer) - 1, 0);
+
+    printf("Client: %s\n", buffer);
+
+    strcpy(buffer, "Hello from Server");
+
+    send(newsockfd, buffer, strlen(buffer) + 1, 0);
+
+    close(newsockfd);
+    close(sockfd);
+
+    return 0;
+}
+</pre>
+
+<h2>TCP Client Code</h2>
+
+<pre>
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+#include &lt;sys/socket.h&gt;
+#include &lt;netinet/in.h&gt;
+#include &lt;arpa/inet.h&gt;
+
+int main() {
+    int sockfd;
+    char buffer[1024];
+    struct sockaddr_in server_addr;
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (sockfd &lt; 0) {
+        perror("Socket creation failed");
+        exit(1);
+    }
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(8899);
+    server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    if (connect(sockfd,
+        (struct sockaddr *)&amp;server_addr,
+        sizeof(server_addr)) &lt; 0) {
+
+        perror("Connection failed");
+        exit(1);
+    }
+
+    printf("Connected to server.\n");
+
+    strcpy(buffer, "Hello from Client");
+
+    send(sockfd, buffer, strlen(buffer) + 1, 0);
+
+    recv(sockfd, buffer, sizeof(buffer) - 1, 0);
+
+    printf("Server: %s\n", buffer);
+
+    close(sockfd);
+
+    return 0;
+}
+</pre>
+
+</body>
+</html>

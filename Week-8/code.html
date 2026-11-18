@@ -1,0 +1,138 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Distance Vector Routing</title>
+
+    <style>
+        body {
+            background-color: white;
+            color: black;
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+        h1, h2 {
+            color: black;
+        }
+
+        pre {
+            background-color: white;
+            color: black;
+            border: 1px solid black;
+            padding: 15px;
+            font-family: Consolas, monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Distance Vector Routing</h1>
+
+    <h2>Code:</h2>
+
+    <pre>
+#include &lt;stdio.h&gt;
+#define INF 999
+
+int main()
+{
+    int n, i, j, k;
+    int cost[10][10], dist[10][10], via[10][10];
+
+    printf("Enter number of routers: ");
+    scanf("%d", &amp;n);
+
+    printf("Enter cost matrix:\n");
+
+    for (i = 0; i &lt; n; i++)
+    {
+        for (j = 0; j &lt; n; j++)
+        {
+            scanf("%d", &amp;cost[i][j]);
+            dist[i][j] = cost[i][j];
+            via[i][j] = j;
+        }
+    }
+
+    for (k = 0; k &lt; n; k++)
+    {
+        for (i = 0; i &lt; n; i++)
+        {
+            for (j = 0; j &lt; n; j++)
+            {
+                if (dist[i][j] &gt; cost[i][k] + dist[k][j])
+                {
+                    dist[i][j] = cost[i][k] + dist[k][j];
+                    via[i][j] = k;
+                }
+            }
+        }
+    }
+
+    printf("\nRouting Tables:\n");
+
+    for (i = 0; i &lt; n; i++)
+    {
+        printf("\nRouter %d:\n", i + 1);
+        printf("Destination\tCost\tNext Hop\n");
+
+        for (j = 0; j &lt; n; j++)
+        {
+            printf("%d\t\t%d\t%d\n",
+                   j + 1, dist[i][j], via[i][j] + 1);
+        }
+    }
+
+    return 0;
+}
+    </pre>
+
+    <h2>Output:</h2>
+
+    <pre>
+Enter number of routers: 4
+
+Enter cost matrix:
+0 2 999 1
+2 0 3 999
+999 3 0 4
+1 999 4 0
+
+Routing Tables:
+
+Router 1:
+Destination      Cost    Next Hop
+1                0       1
+2                2       2
+3                5       4
+4                1       4
+
+Router 2:
+Destination      Cost    Next Hop
+1                2       1
+2                0       2
+3                3       3
+4                3       1
+
+Router 3:
+Destination      Cost    Next Hop
+1                5       4
+2                3       2
+3                0       3
+4                4       4
+
+Router 4:
+Destination      Cost    Next Hop
+1                1       1
+2                3       1
+3                4       3
+4                0       4
+    </pre>
+
+</body>
+</html>
